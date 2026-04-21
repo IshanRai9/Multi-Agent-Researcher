@@ -3,7 +3,10 @@ import operator
 from langgraph.graph import StateGraph, START, END
 
 # Import nodes
-from agents import classifier_node, searcher_node, summarizer_node, fact_checker_node, writer_node
+from agents import searcher_node, summarizer_node, fact_checker_node, writer_node
+
+# Maximum retry loops before circuit breaker kicks in
+MAX_RETRIES = 5
 
 # Define Graph State
 class AgentState(TypedDict):
@@ -14,11 +17,19 @@ class AgentState(TypedDict):
     current_draft: str
     final_report: str
     errors: Annotated[List[str], operator.add]
+    retry_count: int
+    source_urls: Annotated[List[str], operator.add]
+    pdf_collection: str
 
 def route_fact_check(state: AgentState) -> str:
     errors = state.get("errors", [])
+    retry_count = state.get("retry_count", 0)
+
     if errors and "REJECT" in errors[-1]:
-        print(">>> ROUTING: Hallucination flagged! Routing back to Searcher to retry.")
+        if retry_count >= MAX_RETRIES:
+            print(f">>> ROUTING: Circuit breaker triggered after {retry_count} retries. Sending to Writer with failure report.")
+            return "Writer"
+        print(f">>> ROUTING: Hallucination flagged (attempt {retry_count}/{MAX_RETRIES})! Routing back to Searcher to retry.")
         return "Searcher"
     else:
         print(">>> ROUTING: Verification passed! Routing to Writer.")
@@ -29,19 +40,17 @@ def build_graph():
     workflow = StateGraph(AgentState)
     
     # Add nodes
-    workflow.add_node("Classifier", classifier_node)
     workflow.add_node("Searcher", searcher_node)
     workflow.add_node("Summarizer", summarizer_node)
     workflow.add_node("FactChecker", fact_checker_node)
     workflow.add_node("Writer", writer_node)
     
     # Define edges
-    workflow.add_edge(START, "Classifier")
-    workflow.add_edge("Classifier", "Searcher")
+    workflow.add_edge(START, "Searcher")
     workflow.add_edge("Searcher", "Summarizer")
     workflow.add_edge("Summarizer", "FactChecker")
     
-    # Conditonal Edge
+    # Conditonal Edge with circuit breaker
     workflow.add_conditional_edges("FactChecker", route_fact_check, {"Searcher": "Searcher", "Writer": "Writer"})
     
     workflow.add_edge("Writer", END)
@@ -64,7 +73,10 @@ if __name__ == "__main__":
         "raw_context": "",
         "current_draft": "",
         "final_report": "",
-        "errors": []
+        "errors": [],
+        "retry_count": 0,
+        "source_urls": [],
+        "pdf_collection": ""
     }
     
     # Run graph
