@@ -17,6 +17,15 @@
                 <input type="text" id="queryInput" placeholder="Enter research query...">
                 <button id="searchBtn">Research</button>
             </div>
+            <!-- PDF Upload -->
+            <div class="upload-container">
+                <label class="upload-label" id="uploadLabel" for="pdfInput">
+                    <span class="upload-icon">📄</span>
+                    <span class="upload-text">Upload PDF for RAG (optional)</span>
+                </label>
+                <input type="file" id="pdfInput" accept=".pdf" hidden>
+                <div id="uploadStatus" class="upload-status hidden"></div>
+            </div>
         </header>
 
         <!-- Main Workspace -->
