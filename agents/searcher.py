@@ -2,33 +2,27 @@ from typing import Any, Dict
 from .llm_config import get_llm
 from langchain_core.prompts import PromptTemplate
 from tools.search import tavily_search
-from tools.vector_store import retrieve_chunks
+from tools.vector_store import retrieve_from_collection
 import ast
+import re
 
 def searcher_node(state: Dict[str, Any]) -> Dict[str, Any]:
     print("--- [Searcher Agent] Analyzing query & gathering info... ---")
     messages = state.get("messages", [])
-    user_query = messages[-1] if messages else ""
-    
-    import re
+    raw_msg = messages[-1] if messages else ""
+    pdf_collection = state.get("pdf_collection", "")
+
+    # Strip the "User query: " prefix to get the clean query
+    user_query = re.sub(r"^User query:\s*", "", raw_msg, flags=re.IGNORECASE)
+
     # Connect to LLM to extract optimized queries
     llm = get_llm()
     prompt = PromptTemplate.from_template(
         "You are an expert Search Strategist.\n"
-        "First, classify the user's query into ONE of the following types:\n"
-        "- literature_review\n"
-        "- comparison\n"
-        "- concept_explanation\n"
-        "- implementation\n\n"
-        "Then generate EXACTLY THREE targeted search queries using these rules:\n\n"
+        "Generate EXACTLY THREE targeted search queries for the user's question using these rules:\n\n"
         "1. Query Decomposition: Break multi-part queries into focused sub-queries.\n"
         "2. Query Rewriting: Use precise keywords and include academic modifiers (e.g., 'paper', 'survey', 'arXiv', 'review').\n"
         "3. Step-Back Prompting: Ensure ONE query is broad and conceptual.\n\n"
-        "Additional Rules:\n"
-        "- If literature_review: include terms like 'survey', 'review', 'studies', 'urban solar placement LP', and optionally years (e.g., 2020 2024).\n"
-        "- If comparison: include BOTH entities in at least TWO queries and use 'vs', 'difference', or 'comparison'.\n"
-        "- If concept_explanation: include 'advantages', 'limitations', 'theory'.\n"
-        "- If implementation: include 'example', 'code', or 'workflow'.\n\n"
         "You MUST return ONLY a valid Python list of exactly 3 strings and nothing else.\n\n"
         "Query: {query}\n"
         "Search Phrases List:"
@@ -52,15 +46,32 @@ def searcher_node(state: Dict[str, Any]) -> Dict[str, Any]:
         
     print(f"--- [Searcher Agent] Formulated Sub-Queries: {optimized_queries} ---")
     
-    # Gather context by routing parallelly across decomposed queries
+    # Gather context by routing across decomposed queries, collecting source URLs
     combined_context = ""
+    all_urls = []
     for q in optimized_queries[:3]:
-        tavily_context = tavily_search(q)
-        local_chunks = retrieve_chunks(q, k=2)
-        local_context = "\n".join(local_chunks)
-        combined_context += f"### Sub-Query Context: {q}\n--- TAVILY WEB SEARCH ---\n{tavily_context}\n\n--- LOCAL KNOWLEDGE BASE ---\n{local_context}\n\n"
+        tavily_context, urls = tavily_search(q)
+        all_urls.extend(urls)
+
+        # Only query local knowledge base if a PDF was uploaded for this session
+        local_context = ""
+        if pdf_collection:
+            local_chunks = retrieve_from_collection(q, collection_name=pdf_collection, k=2)
+            local_context = "\n".join(local_chunks)
+            if local_context:
+                combined_context += f"### Sub-Query Context: {q}\n--- TAVILY WEB SEARCH ---\n{tavily_context}\n\n--- UPLOADED DOCUMENT ---\n{local_context}\n\n"
+            else:
+                combined_context += f"### Sub-Query Context: {q}\n--- TAVILY WEB SEARCH ---\n{tavily_context}\n\n"
+        else:
+            combined_context += f"### Sub-Query Context: {q}\n--- TAVILY WEB SEARCH ---\n{tavily_context}\n\n"
     
+    if pdf_collection:
+        print(f"--- [Searcher Agent] Using uploaded PDF collection: {pdf_collection} ---")
+    else:
+        print("--- [Searcher Agent] No PDF uploaded, using web search only ---")
+
     return {
         "search_queries": optimized_queries,
-        "raw_context": combined_context
+        "raw_context": combined_context,
+        "source_urls": all_urls
     }
