@@ -1,5 +1,6 @@
 import os
-from langchain_community.document_loaders import TextLoader
+import uuid
+import chromadb
 from langchain_community.vectorstores import Chroma
 from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_text_splitters import RecursiveCharacterTextSplitter
@@ -35,7 +36,6 @@ def index_pdf(pdf_path: str):
         
     # Create or update Vector Store
     embeddings = get_embeddings()
-    # Remove existing DB if exists to avoid duplication for this dummy, or just append
     vectorstore = Chroma.from_texts(
         texts=chunks, 
         embedding=embeddings, 
@@ -59,6 +59,66 @@ def retrieve_chunks(query: str, k: int = 3) -> list[str]:
     # Retrieve top k relevant docs
     docs = vectorstore.similarity_search(query, k=k)
     return [doc.page_content for doc in docs]
+
+
+# --- Session-scoped PDF upload support ---
+
+def index_pdf_to_collection(pdf_path: str, collection_name: str) -> bool:
+    """
+    Index a PDF into a named ChromaDB collection (session-scoped).
+    This keeps uploaded PDFs isolated from the persistent /data store.
+    """
+    text = extract_text_from_pdf(pdf_path)
+
+    if text.startswith("[Error]") or text.startswith("[Warning]"):
+        print(f"Skipping indexing due to read error: {text}")
+        return False
+
+    text_splitter = RecursiveCharacterTextSplitter(
+        chunk_size=500,
+        chunk_overlap=50,
+        length_function=len
+    )
+    chunks = text_splitter.split_text(text)
+
+    if not chunks:
+        print("No chunks generated from the uploaded document.")
+        return False
+
+    embeddings = get_embeddings()
+    vectorstore = Chroma.from_texts(
+        texts=chunks,
+        embedding=embeddings,
+        collection_name=collection_name,
+        persist_directory=DB_DIR
+    )
+    print(f"Successfully indexed {len(chunks)} chunks into collection '{collection_name}'.")
+    return True
+
+
+def retrieve_from_collection(query: str, collection_name: str, k: int = 3) -> list[str]:
+    """
+    Retrieve chunks from a specific named collection (for uploaded PDFs).
+    """
+    embeddings = get_embeddings()
+    vectorstore = Chroma(
+        persist_directory=DB_DIR,
+        embedding_function=embeddings,
+        collection_name=collection_name
+    )
+    docs = vectorstore.similarity_search(query, k=k)
+    return [doc.page_content for doc in docs]
+
+
+def delete_collection(collection_name: str):
+    """Clean up a session-scoped collection after research completes."""
+    try:
+        client = chromadb.PersistentClient(path=DB_DIR)
+        client.delete_collection(collection_name)
+        print(f"Cleaned up collection '{collection_name}'.")
+    except Exception as e:
+        print(f"[Warning] Could not delete collection '{collection_name}': {e}")
+
 
 if __name__ == "__main__":
     db_path = DB_DIR
