@@ -56,7 +56,7 @@ def searcher_node(state: Dict[str, Any]) -> Dict[str, Any]:
         # Only query local knowledge base if a PDF was uploaded for this session
         local_context = ""
         if pdf_collection:
-            local_chunks = retrieve_from_collection(q, collection_name=pdf_collection, k=2)
+            local_chunks = retrieve_from_collection(q, collection_name=pdf_collection, k=5)
             local_context = "\n".join(local_chunks)
             if local_context:
                 combined_context += f"### Sub-Query Context: {q}\n--- TAVILY WEB SEARCH ---\n{tavily_context}\n\n--- UPLOADED DOCUMENT ---\n{local_context}\n\n"

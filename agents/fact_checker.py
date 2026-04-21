@@ -4,6 +4,40 @@ from typing import Any, Dict
 from .llm_config import get_llm
 from langchain_core.prompts import ChatPromptTemplate
 
+# Semantic indicators used when the LLM fails to produce valid JSON
+_PASS_INDICATORS = [
+    "accurate", "correct", "verified", "no contradictions", "consistent",
+    "comprehensive", "well-supported", "faithful", "aligns with", "supported by"
+]
+_REJECT_INDICATORS = [
+    "contradict", "fabricat", "unsupported", "hallucin", "inaccurat",
+    "inconsisten", "not supported", "false claim", "misleading"
+]
+
+
+def _strip_thinking_tags(text: str) -> str:
+    """Strip <think>...</think> blocks that some models (Gemma, Qwen) emit before the answer."""
+    return re.sub(r"<think>.*?</think>", "", text, flags=re.DOTALL).strip()
+
+
+def _semantic_pass_check(text: str) -> bool:
+    """
+    When JSON parsing fails, infer PASS/REJECT from the prose.
+    Returns True if the text reads like an approval, False if it reads like a rejection.
+    """
+    text_lower = text.lower()
+    reject_score = sum(1 for kw in _REJECT_INDICATORS if kw in text_lower)
+    pass_score = sum(1 for kw in _PASS_INDICATORS if kw in text_lower)
+    # If clear rejection language is present, reject
+    if reject_score > 0 and reject_score >= pass_score:
+        return False
+    # If approval language is dominant, pass
+    if pass_score > 0:
+        return True
+    # Ambiguous — default to reject (conservative)
+    return False
+
+
 def fact_checker_node(state: Dict[str, Any]) -> Dict[str, Any]:
     print("--- [Fact-Checker Agent] Verifying draft... ---")
     current_draft = state.get("current_draft", "")
@@ -25,7 +59,9 @@ def fact_checker_node(state: Dict[str, Any]) -> Dict[str, Any]:
             "REJECT IF:\n"
             "- Any claim contradicts the context.\n"
             "- A claim is clearly unsupported or fabricated.\n\n"
-            "Output ONLY a valid JSON:\n"
+            "CRITICAL: You MUST output ONLY a raw JSON object with NO other text, "
+            "NO markdown fences, NO explanation before or after.\n"
+            "The JSON schema is:\n"
             "{{\n"
             "  \"status\": \"PASS\" | \"REJECT\",\n"
             "  \"contradictions_found\": [\"...\"],\n"
@@ -35,10 +71,13 @@ def fact_checker_node(state: Dict[str, Any]) -> Dict[str, Any]:
     ])
     
     chain = prompt | llm
-    response = chain.invoke({"context": raw_context, "summary": current_draft}).content.strip()
+    raw_response = chain.invoke({"context": raw_context, "summary": current_draft}).content.strip()
+
+    # Strip <think> tags that some models emit before the actual answer
+    response = _strip_thinking_tags(raw_response)
     
     try:
-        # Robust JSON extraction block
+        # Robust JSON extraction: find the first { ... } block
         json_match = re.search(r'\{.*\}', response, re.DOTALL)
         if json_match:
             audit_result = json.loads(json_match.group(0))
@@ -58,8 +97,13 @@ def fact_checker_node(state: Dict[str, Any]) -> Dict[str, Any]:
             return {"errors": ["PASS"]}
             
     except Exception as e:
-        print(f"--- [Fact-Checker Agent] Parsing Error: {e}. Raw Response: {response[:100]}... ---")
-        # Fallback: conservative REJECT if parsing fails — garbled output should not silently pass
-        if "PASS" in response.upper() and "REJECT" not in response.upper():
+        print(f"--- [Fact-Checker Agent] JSON Parsing Error: {e} ---")
+        print(f"--- [Fact-Checker Agent] Raw response (first 200 chars): {response[:200]} ---")
+
+        # Semantic fallback: analyze the prose for pass/reject intent
+        if _semantic_pass_check(response):
+            print("--- [Fact-Checker Agent] Semantic fallback: detected PASS intent ---")
             return {"errors": ["PASS"]}
-        return {"errors": [f"REJECT: Unstructured audit failure - {response[:200]}"], "retry_count": retry_count + 1}
+        else:
+            print(f"--- [Fact-Checker Agent] Semantic fallback: detected REJECT intent (attempt {retry_count + 1}) ---")
+            return {"errors": [f"REJECT: Unstructured audit failure - {response[:200]}"], "retry_count": retry_count + 1}

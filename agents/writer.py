@@ -9,22 +9,24 @@ def writer_node(state: Dict[str, Any]) -> Dict[str, Any]:
     source_urls = state.get("source_urls", [])
     retry_count = state.get("retry_count", 0)
     
-    # Check if the auditor rejected and the circuit breaker forced us here
-    reject_errors = [e for e in errors if "REJECTED by Auditor" in e or ("REJECT" in e.upper() and e != "PASS")]
-    if reject_errors:
-        latest_feedback = reject_errors[-1] if reject_errors else "Audit failed."
+    # Only check the LATEST error entry — errors accumulate via operator.add,
+    # so old REJECT entries persist even after the fact-checker passes on retry.
+    latest_error = errors[-1] if errors else "PASS"
+    is_rejected = "REJECT" in latest_error.upper() and latest_error != "PASS"
+
+    if is_rejected:
         report = (
-            "## ⚠️ Research Report — Verification Failed\n\n"
+            "## Research Report -- Verification Failed\n\n"
             f"The Academic Auditor could not verify the research findings after **{retry_count} attempts**.\n\n"
             "### Auditor's Final Feedback\n\n"
-            f"> {latest_feedback}\n\n"
+            f"> {latest_error}\n\n"
             "### What This Means\n\n"
             "The retrieved sources may contain conflicting information, or the query may be too broad "
             "for the available data to produce a fully verified report.\n\n"
             "### Suggested Next Steps\n\n"
-            "1. **Refine your query** — Try a more specific or narrowly scoped question.\n"
-            "2. **Add local documents** — Drop relevant PDFs into the `data/` folder to strengthen the knowledge base.\n"
-            "3. **Try a different angle** — Rephrase the question to focus on a specific aspect.\n"
+            "1. **Refine your query** -- Try a more specific or narrowly scoped question.\n"
+            "2. **Upload a PDF** -- Use the upload button to add relevant documents for RAG.\n"
+            "3. **Try a different angle** -- Rephrase the question to focus on a specific aspect.\n"
         )
         return {"final_report": report}
         
