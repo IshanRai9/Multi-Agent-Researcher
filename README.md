@@ -1,4 +1,4 @@
-# Multi-Agent Research Assistant 🤖🕵️‍♂️
+# Multi-Agent Research Assistant 
 
 A comprehensive Multi-Agent RAG (Retrieval-Augmented Generation) system built using **LangGraph**, **FastAPI**, and **Ollama**. It autonomously researches topics by searching the web and local documents, rigorously fact-checks its findings, and generates well-cited, academic-style reports.
 
