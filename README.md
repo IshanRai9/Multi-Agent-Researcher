@@ -4,26 +4,37 @@ A comprehensive Multi-Agent RAG (Retrieval-Augmented Generation) system built us
 
 ## Features
 
-- **Multi-Agent Orchestration**: Uses LangGraph to route tasks through specialized AI agents.
-- **Local LLM Engine**: Powered by `qwen3-coder:30b` via Ollama for deep reasoning and strictly structured output (e.g. JSON), guaranteeing data privacy.
-- **Robust Fact-Checking**: The "Ruthless Academic Auditor" agent performs structured logical audits and context verification, preventing hallucinations.
+- **Multi-Agent Orchestration**: Uses LangGraph to route tasks through specialized AI agents with automatic retry and circuit-breaking.
+- **Local LLM Engine**: Runs any Ollama-compatible model locally for deep reasoning and structured output, guaranteeing data privacy.
+- **Robust Fact-Checking**: The "Ruthless Academic Auditor" agent performs structured logical audits with feedback-driven retries.
 - **Hybrid Search Context**: Supplements web search data (Tavily) with a local knowledge base (HuggingFace Embeddings + ChromaDB).
-- **Modern Web UI**: A beautiful frontend powered by FastAPI to visualize the research process and display the final report.
+- **Source Citations**: Collects and preserves source URLs for inline citations and a references section.
+- **Real-time Telemetry**: SSE-powered frontend shows agents activating step-by-step as the research progresses.
 
 ## Agents Layout
 
-1. **Searcher Agent**: Receives a query, decomposes it into targeted sub-queries, and queries Tavily Search + Local DB.
-2. **Summarizer Agent**: Extracts raw factual information with zero hallucination.
-3. **Fact-Checker Agent**: Validates logical consistency and traces every claim back to the source data.
-4. **Writer Agent**: Transforms verified facts into a polished, technical report with inline citations and presents auditor feedback if verification fails.
+1. **Searcher Agent**: Decomposes the query into targeted sub-queries, queries Tavily Search + Local ChromaDB, and collects source URLs.
+2. **Summarizer Agent**: Extracts structured, factual information. On retries, incorporates auditor feedback to avoid repeating mistakes.
+3. **Fact-Checker Agent**: Validates logical consistency and traces every claim back to source data. Rejects fabricated or contradicted claims.
+4. **Writer Agent**: Transforms verified facts into a polished report with inline citations and a References section. Reports auditor concerns if verification fails after max retries.
 
 ## Requirements
 
-1. **Ollama**: Download and install [Ollama](https://ollama.com/), and pull the `qwen3-coder:30b` model:
+1. **Ollama**: Download and install [Ollama](https://ollama.com/), and pull any model of your choice:
    ```bash
-   ollama run qwen3-coder:30b
+   ollama pull <model_name>
    ```
-   *(Note: This model requires around 20GB of VRAM to run smoothly. Adjust `agents/llm_config.py` to a smaller model like `llama3` if hardware is constrained.)*
+   **Any Ollama-compatible model works.** Change the model name in `agents/llm_config.py`. Popular options:
+
+   | Model | Size | VRAM Needed | Best For |
+   |-------|------|-------------|----------|
+   | `llama3` | 8B | ~6GB | Fast, general-purpose |
+   | `mistral` | 7B | ~6GB | Strong reasoning |
+   | `gemma2` | 9B | ~7GB | Good balance |
+   | `phi3` | 3.8B | ~3GB | Lightweight / low-end hardware |
+   | `qwen2.5-coder` | 7B | ~6GB | Code-heavy queries |
+   | `gemma4:e4b` | — | ~16GB | Current default |
+   | `qwen3-coder:30b` | 30B | ~20GB | Deep reasoning (high-end GPU) |
 
 2. **API Keys**: You'll need a [Tavily API Key](https://tavily.com/).
    - Copy `.env.example` to `.env` (or create a `.env` file) and add:
