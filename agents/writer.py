@@ -69,7 +69,7 @@ def writer_node(state: Dict[str, Any]) -> Dict[str, Any]:
     llm = get_llm()
     prompt = ChatPromptTemplate.from_messages([
         ("system", "You are an expert technical writer.\n\n"
-        "First, identify the query type:\n"
+        "First, identify the query type(DO NOT write the query type in the final report):\n"
         "- literature_review\n"
         "- comparison\n"
         "- concept_explanation\n\n"
