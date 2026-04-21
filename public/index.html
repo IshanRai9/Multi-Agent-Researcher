@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gen AI Project</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=Manrope:wght@400;600;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header>
+            <h1 class="logo">2102B0065 Gen AI Project</h1>
+            <div class="search-container">
+                <input type="text" id="queryInput" placeholder="Enter research query...">
+                <button id="searchBtn">Research</button>
+            </div>
+        </header>
+
+        <!-- Main Workspace -->
+        <main>
+            <!-- Agent Telemetry Sidebar -->
+            <aside class="agent-panel glass">
+                <h2>Routing</h2>
+                <ul id="agentList">
+                    <li id="agent-searcher"><span class="indicator"></span> Searcher Agent</li>
+                    <li id="agent-summarizer"><span class="indicator"></span> Summarizer Agent</li>
+                    <li id="agent-factchecker"><span class="indicator"></span> Fact-Checker Agent</li>
+                    <li id="agent-writer"><span class="indicator"></span> Writer Agent</li>
+                </ul>
+            </aside>
+
+            <!-- Report Display -->
+            <section class="report-panel glass">
+                <div id="loader" class="hidden">
+                    <div class="spinner"></div>
+                    <p>Executing Graph Logic...</p>
+                </div>
+                <div id="reportContent">
+                    <h2 class="placeholder-text">Awaiting Query...</h2>
+                </div>
+            </section>
+        </main>
+    </div>
+    <script src="app.js"></script>
+</body>
+</html>
