@@ -54,46 +54,6 @@ header {
     gap: 1rem;
 }
 
-/* PDF Upload */
-.upload-container {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 0.5rem;
-    width: 100%;
-    max-width: 800px;
-}
-
-.upload-label {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.6rem 1.5rem;
-    border: 1px dashed var(--border-ghost);
-    border-radius: 9999px;
-    color: var(--text-dim);
-    font-size: 0.9rem;
-    cursor: pointer;
-    transition: all 0.3s ease;
-}
-
-.upload-label:hover {
-    border-color: var(--primary);
-    color: var(--primary);
-    background: rgba(159, 167, 255, 0.05);
-}
-
-.upload-icon { font-size: 1.1rem; }
-
-.upload-status {
-    font-size: 0.85rem;
-    padding: 0.3rem 0;
-    text-align: center;
-}
-
-.upload-loading { color: var(--text-dim); }
-.upload-success { color: #4ade80; }
-.upload-error { color: #f87171; }
 
 input {
     flex: 1;

@@ -1,19 +1,20 @@
 # Multi-Agent Research Assistant 
 
-A comprehensive Multi-Agent RAG (Retrieval-Augmented Generation) system built using **LangGraph**, **FastAPI**, and **Ollama**. It autonomously researches topics by searching the web and local documents, rigorously fact-checks its findings, and generates well-cited, academic-style reports.
+A Multi-Agent Research system built using **LangGraph**, **FastAPI**, and **Ollama**. It autonomously researches topics by searching the web, rigorously fact-checks its findings, and generates well-cited, academic-style reports.
 
 ## Features
 
 - **Multi-Agent Orchestration**: Uses LangGraph to route tasks through specialized AI agents with automatic retry and circuit-breaking.
 - **Local LLM Engine**: Runs any Ollama-compatible model locally for deep reasoning and structured output, guaranteeing data privacy.
 - **Robust Fact-Checking**: The "Ruthless Academic Auditor" agent performs structured logical audits with feedback-driven retries.
-- **Hybrid Search Context**: Supplements web search data (Tavily) with a local knowledge base (HuggingFace Embeddings + ChromaDB).
+- **Web Search Context**: Advanced web search via Tavily API with synthesized answers and rich content extraction.
 - **Source Citations**: Collects and preserves source URLs for inline citations and a references section.
+- **Workflow Report**: Every research run generates a detailed `output/report.md` documenting every agent action from start to end.
 - **Real-time Telemetry**: SSE-powered frontend shows agents activating step-by-step as the research progresses.
 
 ## Agents Layout
 
-1. **Searcher Agent**: Decomposes the query into targeted sub-queries, queries Tavily Search + Local ChromaDB, and collects source URLs.
+1. **Searcher Agent**: Decomposes the query into targeted sub-queries, queries Tavily Search (advanced depth), and collects source URLs.
 2. **Summarizer Agent**: Extracts structured, factual information. On retries, incorporates auditor feedback to avoid repeating mistakes.
 3. **Fact-Checker Agent**: Validates logical consistency and traces every claim back to source data. Rejects fabricated or contradicted claims.
 4. **Writer Agent**: Transforms verified facts into a polished report with inline citations and a References section. Reports auditor concerns if verification fails after max retries.
@@ -33,7 +34,7 @@ A comprehensive Multi-Agent RAG (Retrieval-Augmented Generation) system built us
    | `gemma2` | 9B | ~7GB | Good balance |
    | `phi3` | 3.8B | ~3GB | Lightweight / low-end hardware |
    | `qwen2.5-coder` | 7B | ~6GB | Code-heavy queries |
-   | `gemma4:e4b` | — | ~16GB | Current default |
+   | `gemma4:e4b` | -- | ~16GB | Current default |
    | `qwen3-coder:30b` | 30B | ~20GB | Deep reasoning (high-end GPU) |
 
 2. **API Keys**: You'll need a [Tavily API Key](https://tavily.com/).
@@ -80,9 +81,9 @@ python main.py
 
 ## Structure
 - `/agents` - Contains individual nodes for the LangGraph workflow (`searcher.py`, `summarizer.py`, `fact_checker.py`, `writer.py`, `llm_config.py`).
-- `/tools` - Integrations for Tavily search (`search.py`) and Local ChromaDB (`vector_store.py`).
+- `/tools` - Tavily web search integration (`search.py`).
 - `/public` - Frontend (HTML/JS/CSS) served by FastAPI.
-- `/data` - Drop PDF files here to be indexed into local storage.
+- `/output` - Generated workflow reports (`report.md`) documenting every agent action.
 - `main.py` - Core logic for graph orchestration and local script runs.
 - `api.py` - FastAPI application entry point.
 

@@ -1,4 +1,4 @@
-// Agent node-name → DOM element ID mapping
+// Agent node-name -> DOM element ID mapping
 const AGENT_MAP = {
     'Searcher': 'agent-searcher',
     'Summarizer': 'agent-summarizer',
@@ -8,9 +8,6 @@ const AGENT_MAP = {
 
 // Agent execution order for "next active" prediction
 const AGENT_ORDER = ['Searcher', 'Summarizer', 'FactChecker', 'Writer'];
-
-// Tracks the uploaded PDF's collection name (empty = no PDF)
-let currentPdfCollection = '';
 
 function resetAgents() {
     document.querySelectorAll('#agentList li').forEach(li => {
@@ -46,51 +43,6 @@ function predictNextAgent(completedName) {
     return null;
 }
 
-// --- PDF Upload Handling ---
-
-document.getElementById('pdfInput').addEventListener('change', async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-
-    const statusEl = document.getElementById('uploadStatus');
-    const labelEl = document.getElementById('uploadLabel');
-
-    statusEl.classList.remove('hidden', 'upload-error', 'upload-success');
-    statusEl.textContent = `Indexing "${file.name}"...`;
-    statusEl.classList.add('upload-loading');
-
-    try {
-        const formData = new FormData();
-        formData.append('file', file);
-
-        const response = await fetch('/upload', {
-            method: 'POST',
-            body: formData
-        });
-
-        const data = await response.json();
-
-        if (data.error) {
-            statusEl.textContent = `❌ ${data.error}`;
-            statusEl.classList.remove('upload-loading');
-            statusEl.classList.add('upload-error');
-            currentPdfCollection = '';
-        } else {
-            currentPdfCollection = data.collection;
-            statusEl.textContent = `✅ "${data.filename}" indexed — will be used for RAG`;
-            statusEl.classList.remove('upload-loading');
-            statusEl.classList.add('upload-success');
-            // Update label to show file is loaded
-            labelEl.querySelector('.upload-text').textContent = `Replace PDF (current: ${data.filename})`;
-        }
-    } catch (err) {
-        statusEl.textContent = '❌ Upload failed — server error';
-        statusEl.classList.remove('upload-loading');
-        statusEl.classList.add('upload-error');
-        currentPdfCollection = '';
-    }
-});
-
 // --- Research Flow ---
 
 async function performResearch() {
@@ -114,10 +66,7 @@ async function performResearch() {
         const response = await fetch('/research', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                query,
-                pdf_collection: currentPdfCollection
-            })
+            body: JSON.stringify({ query })
         });
 
         const reader = response.body.getReader();
@@ -145,7 +94,7 @@ async function performResearch() {
                     if (data.error) {
                         // Ollama connection error
                         reportContent.innerHTML = `<div class="error-card">
-                            <h2>🔌 Connection Error</h2>
+                            <h2>Connection Error</h2>
                             <p>${data.error}</p>
                         </div>`;
                         reportContent.classList.remove('hidden');
@@ -175,18 +124,13 @@ async function performResearch() {
         }
     } catch (err) {
         reportContent.innerHTML = `<div class="error-card">
-            <h2>🔌 Server Error</h2>
+            <h2>Server Error</h2>
             <p>Could not connect to the research server. Please ensure it is running.</p>
         </div>`;
     } finally {
         searchBtn.disabled = false;
         reportContent.classList.remove('hidden');
         loader.classList.add('hidden');
-        // Reset PDF collection after research (server cleans up the collection)
-        currentPdfCollection = '';
-        document.getElementById('uploadLabel').querySelector('.upload-text').textContent = 'Upload PDF for RAG (optional)';
-        document.getElementById('uploadStatus').classList.add('hidden');
-        document.getElementById('pdfInput').value = '';
     }
 }
 

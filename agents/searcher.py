@@ -2,7 +2,6 @@ from typing import Any, Dict
 from .llm_config import get_llm
 from langchain_core.prompts import PromptTemplate
 from tools.search import tavily_search
-from tools.vector_store import retrieve_from_collection
 from datetime import datetime
 import ast
 import re
@@ -12,7 +11,6 @@ def searcher_node(state: Dict[str, Any]) -> Dict[str, Any]:
     start_time = datetime.now()
     messages = state.get("messages", [])
     raw_msg = messages[-1] if messages else ""
-    pdf_collection = state.get("pdf_collection", "")
     retry_count = state.get("retry_count", 0)
 
     # Strip the "User query: " prefix to get the clean query
@@ -26,7 +24,6 @@ def searcher_node(state: Dict[str, Any]) -> Dict[str, Any]:
         log_lines.append(f"\n---\n\n## Searcher Agent\n")
     log_lines.append(f"**Timestamp:** {start_time.strftime('%Y-%m-%d %H:%M:%S')}\n")
     log_lines.append(f"**Input Query:** `{user_query}`\n")
-    log_lines.append(f"**PDF Uploaded:** {'Yes (' + pdf_collection + ')' if pdf_collection else 'No'}\n")
 
     # Connect to LLM to extract optimized queries
     llm = get_llm()
@@ -66,7 +63,7 @@ def searcher_node(state: Dict[str, Any]) -> Dict[str, Any]:
         
     print(f"--- [Searcher Agent] Formulated Sub-Queries: {optimized_queries} ---")
     
-    # Gather context by routing across decomposed queries, collecting source URLs
+    # Gather context from web search, collecting source URLs
     combined_context = ""
     all_urls = []
     for idx, q in enumerate(optimized_queries[:3]):
@@ -83,29 +80,11 @@ def searcher_node(state: Dict[str, Any]) -> Dict[str, Any]:
             for u in urls:
                 log_lines.append(f"- {u}\n")
 
-        # Only query local knowledge base if a PDF was uploaded for this session
-        local_context = ""
-        if pdf_collection:
-            local_chunks = retrieve_from_collection(q, collection_name=pdf_collection, k=5)
-            local_context = "\n".join(local_chunks)
-
-            log_lines.append(f"\n**PDF Chunks Retrieved:** {len(local_chunks)} chunks\n")
-            if local_context:
-                log_lines.append(f"<details>\n<summary>Click to expand PDF context</summary>\n\n```\n{local_context[:2000]}{'...(truncated)' if len(local_context) > 2000 else ''}\n```\n</details>\n")
-                combined_context += f"### Sub-Query Context: {q}\n--- TAVILY WEB SEARCH ---\n{tavily_context}\n\n--- UPLOADED DOCUMENT ---\n{local_context}\n\n"
-            else:
-                combined_context += f"### Sub-Query Context: {q}\n--- TAVILY WEB SEARCH ---\n{tavily_context}\n\n"
-        else:
-            combined_context += f"### Sub-Query Context: {q}\n--- TAVILY WEB SEARCH ---\n{tavily_context}\n\n"
+        combined_context += f"### Sub-Query Context: {q}\n--- TAVILY WEB SEARCH ---\n{tavily_context}\n\n"
     
     elapsed = (datetime.now() - start_time).total_seconds()
     log_lines.append(f"\n**Total Sources Collected:** {len(all_urls)}\n")
     log_lines.append(f"**Searcher Duration:** {elapsed:.1f}s\n")
-
-    if pdf_collection:
-        print(f"--- [Searcher Agent] Using uploaded PDF collection: {pdf_collection} ---")
-    else:
-        print("--- [Searcher Agent] No PDF uploaded, using web search only ---")
 
     return {
         "search_queries": optimized_queries,

@@ -13,9 +13,7 @@ env/
 ENV/
 .venv/
 
-# Local data / Vector DB
-data/chroma_db/
-data/uploads/
+# Output
 output/
 
 # OS generated files

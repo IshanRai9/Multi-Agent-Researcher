@@ -1,0 +1,219 @@
+
+❯ /review                                                                       
+
+● I'll help you review the pull request. First, let me check what PRs are
+  currently open so I can determine which one to review.
+
+● Bash(gh pr list)
+  ⎿  Interrupted · What should Claude do instead?
+
+❯ Review the project in this workspace and find errors, useless functions and   
+suggest changes for a smoother experience. DO NOT implement anything, just give 
+ a list and I will tell you what to do                                          
+
+● I'll help you review the project for errors, useless functions, and suggest
+  improvements. Let me start by understanding what we're working with.
+
+  First, let me explore the project structure to get a better understanding of
+  what we're dealing with:
+
+  Searched for 1 pattern (ctrl+o to expand)
+
+● I see that the ripgrep tool isn't installed on this Windows system, which is
+  preventing us from using the Glob tool effectively. Let me try a different
+  approach to understand the project structure by examining the git status and
+  looking for key files that might help us understand what we're working with.
+
+  Listed 1 directory (ctrl+o to expand)
+
+● Let me examine key files to understand what this project is about:
+
+  Read 2 files (ctrl+o to expand)
+
+● Let me examine the key files in the agents directory to understand the
+  implementation:
+
+  Read 8 files (ctrl+o to expand)
+
+● Now I'll also check the requirements to understand what dependencies are being
+   used:
+
+  Read 1 file (ctrl+o to expand)
+
+● Code Review for Multi-Agent Research Assistant
+
+  Context
+
+  This is a comprehensive Multi-Agent RAG (Retrieval-Augmented Generation)
+  system built using LangGraph, FastAPI, and Ollama. It autonomously researches
+  topics by searching web and local documents, fact-checks findings, and
+  generates well-cited academic-style reports.
+
+  Review Findings
+
+  1. Positive Aspects
+
+  Project Structure
+  - Well-organized modular structure with clear separation of concerns
+  - Good use of LangGraph for multi-agent workflow orchestration
+  - Clean separation between API layer and agent logic
+  - Good documentation in README with clear agent roles
+
+  Functionality
+  - Robust multi-agent workflow with circuit breaker for error handling
+  - Support for both web search (Tavily) and local knowledge base (ChromaDB)
+  - PDF upload and indexing capabilities for personal documents
+  - Real-time streaming API with progress feedback
+  - Comprehensive logging and reporting
+
+  2. Potential Issues
+
+  Error Handling and Code Quality
+
+  1. Inconsistent Error Handling
+    - The fact checker in fact_checker.py has a critical logic issue where it
+  fails to extract JSON properly when encountering certain LLM responses and
+  falls back to text-based semantic analysis. This creates a gap in
+  verification.
+  2. Variable Scope Confusion
+    - In main.py, the route_fact_check function compares errors[-1] but there's
+  no explicit handling of what happens when errors list is empty, creating
+  potential edge case issues.
+  3. Code Duplication
+    - Similar timestamp logging and workflow tracking logic appears in all agent
+   files with minor variations
+    - The get_llm() function in llm_config.py uses a hardcoded model name
+  instead of fetching from environment variables like other configurations
+  4. Missing Input Validation
+    - The PDF upload endpoint doesn't validate file size or content type beyond
+  extension check
+    - No validation for query input length or complexity at the API layer
+
+  Performance Considerations
+
+  5. Resource Management
+    - Session cleanup in api.py only happens after graph execution completes. If
+   the process is long-running, there may be resource leakage.
+    - No explicit memory management when processing PDF uploads in
+  tools/vector_store.py.
+  6. Hardcoded Values
+    - MAX_RETRIES = 5 in main.py is hardcoded without a configuration option
+    - Fixed chunk size (500) and overlap (50) in tools/vector_store.py
+
+  Security and Best Practices
+
+  7. Hardcoded Models
+    - In agents/llm_config.py, the model is hardcoded to "gemma4:e4b" instead of
+   being configurable
+    - This limits flexibility for users to choose different models
+  8. Error Message Exposure
+    - Some error messages could expose internal paths or implementation details
+  to users (e.g., PDF indexing errors in vector_store.py)
+
+  3. Suggestions for Improvement
+
+  Code Structure and Organization
+  - Factor out common logging and workflow tracking logic into shared utilities
+  - Make the retry configuration configurable rather than hardcoded
+  - Implement better input sanitization throughout the API layer
+
+  Enhancement Opportunities
+  - Add unit tests to each agent's functionality
+  - Implement rate limiting for API endpoints to prevent abuse
+  - Add more sophisticated query analysis (e.g., detect if query is too
+  broad/unclear)
+  - Consider adding caching mechanisms for common searches
+  - Add support for more document formats beyond PDF
+
+  Deployment & User Experience
+  - Better error messages when Ollama is not available
+  - More graceful shutdown handling for long-running processes
+  - Improved validation of input parameters
+  - Add progress feedback to the frontend components that use the streaming
+  interface
+
+  4. Key Areas for Review
+
+  1. Error Handling - The circuit breaker logic and verification process needs
+  careful review for edge cases.
+  2. LLM Model Management - Make model support more configurable.
+  3. Input Validation - Add comprehensive validation at the API boundary.
+  4. Resource Management - Ensure all temporary files and collections are
+  properly cleaned up.
+  5. Scalability - Consider how the system would perform under high load
+  conditions.
+
+  The system is quite sophisticated with a good architectural foundation, but
+  these areas require attention to ensure reliability and usability across
+  different deployment scenarios.
+
+● Exited plan mode
+
+● Thank you for the detailed code review. I've analyzed the Multi-Agent Research
+   Assistant codebase and identified several areas that need attention, both
+  positive aspects and potential issues.
+
+  I understand that you asked me to "Review the project in this workspace and
+  find errors, useless functions and suggest changes for a smoother experience.
+  DO NOT implement anything, just give a list and I will tell you what to do"
+
+  Based on my review, here's a comprehensive list of findings:
+
+  Key Findings
+
+  Critical Issues
+
+  1. Fact Checker Logic Gap - In fact_checker.py, when JSON parsing fails, the
+  semantic analysis approach may not reliably distinguish between accurate and
+  inaccurate content
+  2. Input Validation Missing - API endpoints lack proper validation for all
+  inputs
+  3. Hardcoded Model Name - The LLM model is hardcoded in agents/llm_config.py
+  instead of being configurable
+
+  Major Issues
+
+  1. Error Handling Inconsistencies - Inconsistent error handling patterns
+  across agents, especially in route_fact_check function
+  2. Resource Management - Session cleanup only happens after execution
+  completes; potential for resource leakage
+  3. Hardcoded Configuration Values - MAX_RETRIES = 5, chunk size 500 in
+  tools/vector_store.py
+
+  Minor Issues
+
+  1. Code Duplication - Similar logging and workflow tracking patterns across
+  agent files
+  2. Missing Test Coverage - No unit tests for core agent functionality
+  3. Insufficient Rate Limiting - API endpoints could benefit from rate limiting
+
+  Suggestions for Improvement:
+
+  1. Make configurations flexible - Model name, retry count, chunk size should
+  be configurable
+  2. Improve input sanitization - Add comprehensive validation throughout API
+  3. Add shared utilities - Factor out common patterns into reusable components
+  4. Implement better error reporting - More informative error messages for
+  troubleshooting
+  5. Add rate limiting - Protect against abuse of the API endpoints
+
+  Let me know what you'd like to focus on first and I'll provide more detailed
+  analysis of any specific areas you're interested in. Or if you want to discuss
+   the implementation of any of these suggestions.
+
+● Entered plan mode
+  Claude is now exploring and designing an implementation approach.
+
+● I understand that I'm now in plan mode for exploring the codebase and
+  designing an implementation approach. Let me conduct a more thorough analysis
+  of the project to better understand its patterns and requirements.
+
+  Let me focus on specific areas that were identified in the review. First,
+  let's look more deeply at a few critical files:
+
+  Searched for 1 pattern (ctrl+o to expand)
+
+● It seems we're having issues with the ripgrep tool. Let me try a different
+  approach to examine the code:
+
+  Read 1 file (ctrl+o to expand)

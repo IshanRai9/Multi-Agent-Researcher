@@ -38,7 +38,7 @@ def writer_node(state: Dict[str, Any]) -> Dict[str, Any]:
             "for the available data to produce a fully verified report.\n\n"
             "### Suggested Next Steps\n\n"
             "1. **Refine your query** -- Try a more specific or narrowly scoped question.\n"
-            "2. **Upload a PDF** -- Use the upload button to add relevant documents for RAG.\n"
+            "2. **Check your sources** -- Ensure relevant information is available online for this topic.\n"
             "3. **Try a different angle** -- Rephrase the question to focus on a specific aspect.\n"
         )
 
