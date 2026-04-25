@@ -54,6 +54,48 @@ header {
     gap: 1rem;
 }
 
+/* Output Length Selector Bar */
+.length-bar {
+    display: flex;
+    gap: 0.5rem;
+    width: 100%;
+    max-width: 800px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    padding: 0.25rem 0;
+}
+
+.length-bar::-webkit-scrollbar { display: none; }
+
+.length-btn {
+    flex-shrink: 0;
+    padding: 0.45rem 1.3rem;
+    border-radius: 9999px;
+    border: 1px solid var(--border-ghost);
+    background: transparent;
+    color: var(--text-dim);
+    font-family: 'Inter', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    box-shadow: none;
+}
+
+.length-btn:hover {
+    border-color: var(--primary);
+    color: var(--primary);
+    background: rgba(159, 167, 255, 0.06);
+}
+
+.length-btn.active {
+    background: linear-gradient(135deg, var(--primary), var(--primary-container));
+    color: #000;
+    border-color: transparent;
+    font-weight: 600;
+    box-shadow: 0 0 14px var(--glow);
+}
 
 input {
     flex: 1;

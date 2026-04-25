@@ -9,6 +9,9 @@ const AGENT_MAP = {
 // Agent execution order for "next active" prediction
 const AGENT_ORDER = ['Searcher', 'Summarizer', 'FactChecker', 'Writer'];
 
+// Currently selected output length (default: standard)
+let selectedLength = 'standard';
+
 function resetAgents() {
     document.querySelectorAll('#agentList li').forEach(li => {
         li.classList.remove('active', 'done');
@@ -43,6 +46,17 @@ function predictNextAgent(completedName) {
     return null;
 }
 
+// --- Output Length Selector ---
+
+document.querySelectorAll('.length-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        // Remove active from all, set on clicked
+        document.querySelectorAll('.length-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        selectedLength = btn.dataset.length;
+    });
+});
+
 // --- Research Flow ---
 
 async function performResearch() {
@@ -66,7 +80,10 @@ async function performResearch() {
         const response = await fetch('/research', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ query })
+            body: JSON.stringify({
+                query,
+                output_length: selectedLength
+            })
         });
 
         const reader = response.body.getReader();

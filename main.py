@@ -19,6 +19,7 @@ class AgentState(TypedDict):
     errors: Annotated[List[str], operator.add]
     retry_count: int
     source_urls: Annotated[List[str], operator.add]
+    output_length: str
     workflow_log: Annotated[List[str], operator.add]
 
 def route_fact_check(state: AgentState) -> str:
@@ -78,6 +79,7 @@ if __name__ == "__main__":
         "errors": [],
         "retry_count": 0,
         "source_urls": [],
+        "output_length": "standard",
         "workflow_log": []
     }
     

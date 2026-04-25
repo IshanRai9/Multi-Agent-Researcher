@@ -66,9 +66,29 @@ def writer_node(state: Dict[str, Any]) -> Dict[str, Any]:
     else:
         log_lines.append(f"No source URLs available.\n")
 
+    # Map output_length selection to word count targets
+    output_length = state.get("output_length", "standard")
+    length_map = {
+        "brief": ("150-200 words", "a very short, high-level overview"),
+        "concise": ("300-400 words", "a focused summary hitting only key points"),
+        "standard": ("500-700 words", "a well-structured report with moderate detail"),
+        "detailed": ("800-1200 words", "a thorough, in-depth report covering all aspects"),
+        "comprehensive": ("1500+ words", "an exhaustive, fully detailed academic-style report")
+    }
+    word_target, style_desc = length_map.get(output_length, length_map["standard"])
+    length_instruction = (
+        f"\n\nOUTPUT LENGTH REQUIREMENT:\n"
+        f"Write {style_desc} of approximately {word_target}.\n"
+        f"This is a STRICT constraint from the user. Stay as close to {word_target} as possible.\n"
+        f"Do NOT exceed or fall significantly short of this target."
+    )
+
+    log_lines.append(f"\n### Output Length Setting\n")
+    log_lines.append(f"**Selected:** `{output_length}` ({word_target})\n")
+
     llm = get_llm()
     prompt = ChatPromptTemplate.from_messages([
-        ("system", "You are an expert technical writer.\n\n"
+        ("system", "You are an expert **Technical Writer**. Your task is to structure the provided text into a **clear, organised format** while maintaining its original meaning.\n\n"
         "First, identify the query type(DO NOT write the query type in the final report):\n"
         "- literature_review\n"
         "- comparison\n"
@@ -78,6 +98,10 @@ def writer_node(state: Dict[str, Any]) -> Dict[str, Any]:
         "- Do NOT hallucinate.\n"
         "- Use only the provided summary.\n"
         "- Include inline citations like [1], [2] using the provided references.\n\n"
+        "- **Segment** content into appropriate sections.\n"
+        "- **Use** headings, subheadings, and lists where necessary.\n"
+        "- **Ensure** logical progression and flow.\n"
+        "- **Improve** readability without altering the core message.\n\n"
         "If literature_review:\n"
         "- Structure:\n"
         "  1. Introduction\n"
@@ -96,7 +120,7 @@ def writer_node(state: Dict[str, Any]) -> Dict[str, Any]:
         "If summary == 'INSUFFICIENT_CONTEXT':\n"
         "Output EXACTLY:\n"
         "'The provided documents and web search did not contain enough information to fully answer your query.'"
-        + references_context),
+        + length_instruction + references_context),
         ("user", "Verified Summary:\n{summary}")
     ])
     

@@ -21,6 +21,7 @@ app.add_middleware(
 
 class QueryRequest(BaseModel):
     query: str
+    output_length: str = "standard"
 
 # Output directory for workflow reports
 OUTPUT_DIR = os.path.join(os.path.dirname(__file__), "output")
@@ -94,6 +95,7 @@ async def perform_research(request: QueryRequest):
         "errors": [],
         "retry_count": 0,
         "source_urls": [],
+        "output_length": request.output_length,
         "workflow_log": []
     }
 

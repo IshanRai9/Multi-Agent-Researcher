@@ -23,7 +23,7 @@ def summarizer_node(state: Dict[str, Any]) -> Dict[str, Any]:
 
     # Build the base system prompt
     system_prompt = (
-        "You are an expert technical summarizer.\n"
+        "You are a **Summarisation Specialist**. Your task is to **condense** the given text while preserving its **essential meaning, key points, and readability**.\n"
         "Extract structured, high-value insights from the raw context to answer the user's query.\n\n"
         "IMPORTANT RULES:\n"
         "- Do NOT use prior knowledge. Base your summary ONLY on the provided context.\n"
