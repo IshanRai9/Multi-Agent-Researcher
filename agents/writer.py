@@ -131,13 +131,18 @@ def writer_node(state: Dict[str, Any]) -> Dict[str, Any]:
     ])
     
     chain = prompt | llm
-    final_report = chain.invoke({"summary": current_draft}).content.strip()
-    final_report = strip_thinking_tags(final_report)
+    raw_final_report = chain.invoke({"summary": current_draft}).content.strip()
+    final_report = strip_thinking_tags(raw_final_report)
+    
+    # Fallback in case stripping removed absolutely everything (e.g. model only output a think block or got cut off)
+    if not final_report and raw_final_report:
+        final_report = raw_final_report
 
     elapsed = (datetime.now() - start_time).total_seconds()
 
     log_lines.append(f"\n### Final Report Generated\n")
-    log_lines.append(f"**Report Length:** {len(final_report)} characters\n")
+    log_lines.append(f"**Raw Report Length:** {len(raw_final_report)} characters\n")
+    log_lines.append(f"**Cleaned Report Length:** {len(final_report)} characters\n")
     log_lines.append(f"**Writer Duration:** {elapsed:.1f}s\n")
     log_lines.append(f"\n### Full Report Content\n")
     log_lines.append(f"\n{final_report}\n")

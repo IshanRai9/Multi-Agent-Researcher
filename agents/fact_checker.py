@@ -124,7 +124,7 @@ def fact_checker_node(state: Dict[str, Any]) -> Dict[str, Any]:
             
     except Exception as e:
         print(f"--- [Fact-Checker Agent] JSON Parsing Error: {e} ---")
-        print(f"--- [Fact-Checker Agent] Raw response (first 200 chars): {response[:200]} ---")
+        print(f"--- [Fact-Checker Agent] Raw response (first 200 chars): {raw_response[:200]} ---")
 
         log_lines.append(f"\n### JSON Parsing Failed\n")
         log_lines.append(f"**Error:** `{e}`\n")

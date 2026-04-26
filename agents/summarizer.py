@@ -50,10 +50,10 @@ def summarizer_node(state: Dict[str, Any]) -> Dict[str, Any]:
             f"\n\n--- PREVIOUS AUDIT FEEDBACK (RETRY) ---\n"
             f"Your previous summary was REJECTED by the Academic Auditor for the following reasons:\n"
             f"{latest_feedback}\n\n"
-            f"You MUST address these specific issues in your new summary:\n"
-            f"- Remove or correct any contradicted claims.\n"
-            f"- Only include claims that are directly supported by the raw context below.\n"
-            f"- Do NOT repeat the same mistakes.\n"
+            f"You MUST address these specific issues in your new summary by:\n"
+            f"- Removing or correcting any contradicted claims.\n"
+            f"- Only including claims that are directly supported by the raw context below.\n"
+            f"- Not repeating the same mistakes.\n"
             f"--- END AUDIT FEEDBACK ---"
         )
         print(f"--- [Summarizer Agent] Retry mode: incorporating auditor feedback ---")
