@@ -106,7 +106,6 @@ def writer_node(state: Dict[str, Any]) -> Dict[str, Any]:
         "- **Ensure** logical progression and flow.\n"
         "- **Improve** readability without altering the core message.\n\n"
         "- Do NOT mention you are an AI or LLM.\n"
-        "- Do NOT output in markdown format.\n"
         "- Do NOT write any line as if you are talking to the user.\n\n"
         "If literature_review:\n"
         "- Structure:\n"
