@@ -3,16 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gen AI Project</title>
+    <title>Multi-Agent Research</title>
     <link rel="stylesheet" href="style.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=Manrope:wght@400;600;800&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="docx.umd.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js"></script>
 </head>
 <body>
     <div class="container">
         <!-- Header -->
         <header>
-            <h1 class="logo">2102B0065 Gen AI Project</h1>
+            <h1 class="logo">Multi-Agent Research Assistant</h1>
             <div class="search-container">
                 <input type="text" id="queryInput" placeholder="Enter research query...">
                 <button id="searchBtn">Research</button>
@@ -48,6 +50,11 @@
                 </div>
                 <div id="reportContent">
                     <h2 class="placeholder-text">Awaiting Query...</h2>
+                </div>
+                <div id="downloadBar" class="download-bar hidden">
+                    <button class="download-btn" id="downloadBtn" onclick="downloadDocx()">
+                        <span class="dl-icon">📥</span> Download .docx
+                    </button>
                 </div>
             </section>
         </main>

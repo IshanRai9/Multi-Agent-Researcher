@@ -50,12 +50,125 @@ function predictNextAgent(completedName) {
 
 document.querySelectorAll('.length-btn').forEach(btn => {
     btn.addEventListener('click', () => {
-        // Remove active from all, set on clicked
         document.querySelectorAll('.length-btn').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
         selectedLength = btn.dataset.length;
     });
 });
+
+// --- DOCX Download ---
+
+function downloadDocx() {
+    const content = document.getElementById('reportContent');
+    if (!content) return;
+
+    const { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType } = docx;
+
+    const children = [];
+    let inReferences = false;
+
+    // Walk all child elements of reportContent
+    for (const el of content.children) {
+        const tag = el.tagName;
+        const text = el.textContent.trim();
+        if (!text) continue;
+
+        // Detect references section
+        if ((tag === 'H1' || tag === 'H2') && text.toLowerCase().includes('reference')) {
+            inReferences = true;
+        }
+
+        if (tag === 'H1') {
+            children.push(new Paragraph({
+                children: [new TextRun({
+                    text: text,
+                    font: 'Times New Roman',
+                    size: 44, // 22pt * 2 (half-points)
+                    bold: true,
+                })],
+                heading: HeadingLevel.HEADING_1,
+                spacing: { after: 200 },
+            }));
+        } else if (tag === 'H2') {
+            children.push(new Paragraph({
+                children: [new TextRun({
+                    text: text,
+                    font: 'Times New Roman',
+                    size: 28, // 14pt * 2
+                    bold: true,
+                })],
+                heading: HeadingLevel.HEADING_2,
+                spacing: { before: 240, after: 120 },
+            }));
+        } else if (tag === 'H3') {
+            children.push(new Paragraph({
+                children: [new TextRun({
+                    text: text,
+                    font: 'Times New Roman',
+                    size: 26, // 13pt
+                    bold: true,
+                })],
+                heading: HeadingLevel.HEADING_3,
+                spacing: { before: 200, after: 100 },
+            }));
+        } else if (tag === 'UL' || tag === 'OL') {
+            const items = el.querySelectorAll('li');
+            items.forEach(li => {
+                const fontSize = inReferences ? 20 : 24; // 10pt or 12pt
+                children.push(new Paragraph({
+                    children: [new TextRun({
+                        text: `• ${li.textContent.trim()}`,
+                        font: 'Times New Roman',
+                        size: fontSize,
+                    })],
+                    spacing: { after: 60 },
+                    indent: { left: 720 }, // 0.5 inch indent
+                }));
+            });
+        } else if (tag === 'P') {
+            const fontSize = inReferences ? 20 : 24; // 10pt or 12pt
+            children.push(new Paragraph({
+                children: [new TextRun({
+                    text: text,
+                    font: 'Times New Roman',
+                    size: fontSize,
+                })],
+                spacing: { after: 120 },
+            }));
+        } else {
+            // Catch-all for other elements (blockquote, div, etc.)
+            const fontSize = inReferences ? 20 : 24;
+            children.push(new Paragraph({
+                children: [new TextRun({
+                    text: text,
+                    font: 'Times New Roman',
+                    size: fontSize,
+                })],
+                spacing: { after: 120 },
+            }));
+        }
+    }
+
+    const doc = new Document({
+        sections: [{
+            properties: {
+                page: {
+                    margin: {
+                        top: 1440,    // 1 inch
+                        right: 1440,
+                        bottom: 1440,
+                        left: 1440,
+                    },
+                },
+            },
+            children: children,
+        }],
+    });
+
+    Packer.toBlob(doc).then(blob => {
+        saveAs(blob, 'research_report.docx');
+    });
+}
 
 // --- Research Flow ---
 
@@ -67,9 +180,11 @@ async function performResearch() {
     const searchBtn = document.getElementById('searchBtn');
     const reportContent = document.getElementById('reportContent');
     const loader = document.getElementById('loader');
+    const downloadBar = document.getElementById('downloadBar');
 
     searchBtn.disabled = true;
     reportContent.classList.add('hidden');
+    downloadBar.classList.add('hidden');
     loader.classList.remove('hidden');
     resetAgents();
 
@@ -133,6 +248,8 @@ async function performResearch() {
                         // Final report received
                         const html = marked.parse(data.report);
                         reportContent.innerHTML = html;
+                        // Show download button
+                        downloadBar.classList.remove('hidden');
                     }
                 } catch (parseErr) {
                     console.warn('SSE parse error:', parseErr, raw);

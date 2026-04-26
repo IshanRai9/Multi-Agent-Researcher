@@ -143,7 +143,8 @@ button:disabled {
 main {
     display: flex;
     gap: 2rem;
-    height: 600px;
+    min-height: 600px;
+    align-items: flex-start;
 }
 
 .glass {
@@ -160,6 +161,8 @@ main {
     display: flex;
     flex-direction: column;
     gap: 1.5rem;
+    position: sticky;
+    top: 2rem;
 }
 
 .agent-panel h2 { font-size: 1.2rem; color: var(--text-dim); }
@@ -220,25 +223,14 @@ main {
 
 .report-panel {
     flex: 3;
-    overflow-y: auto;
     position: relative;
     box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
-}
-
-/* Custom Scrollbar */
-.report-panel::-webkit-scrollbar { width: 6px; }
-.report-panel::-webkit-scrollbar-track { background: transparent; }
-.report-panel::-webkit-scrollbar-thumb {
-    background: var(--primary);
-    border-radius: 6px;
 }
 
 .placeholder-text {
     color: var(--text-dim);
     text-align: center;
-    margin-top: auto;
-    margin-bottom: auto;
-    height: 100%;
+    padding: 6rem 0;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -247,12 +239,11 @@ main {
 .hidden { display: none !important; }
 
 #loader {
-    position: absolute;
-    top: 50%; left: 50%;
-    transform: translate(-50%, -50%);
     display: flex;
     flex-direction: column;
     align-items: center;
+    justify-content: center;
+    padding: 6rem 0;
     gap: 1rem;
 }
 
@@ -271,3 +262,39 @@ main {
 #reportContent p { margin-bottom: 1rem; line-height: 1.6; }
 #reportContent ul { margin-left: 2rem; margin-bottom: 1rem; }
 #reportContent li { margin-bottom: 0.5rem; }
+
+/* Download Button */
+.download-bar {
+    display: flex;
+    justify-content: flex-end;
+    padding-top: 1.5rem;
+    margin-top: 1.5rem;
+    border-top: 1px solid var(--border-ghost);
+}
+
+.download-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.6rem 1.5rem;
+    border-radius: 9999px;
+    border: 1px solid var(--primary);
+    background: rgba(159, 167, 255, 0.08);
+    color: var(--primary);
+    font-family: 'Inter', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    box-shadow: none;
+}
+
+.download-btn:hover {
+    background: linear-gradient(135deg, var(--primary), var(--primary-container));
+    color: #000;
+    border-color: transparent;
+    box-shadow: 0 0 14px var(--glow);
+    transform: translateY(-1px);
+}
+
+.download-btn .dl-icon { font-size: 1rem; }
