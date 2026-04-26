@@ -69,18 +69,21 @@ def writer_node(state: Dict[str, Any]) -> Dict[str, Any]:
     # Map output_length selection to word count targets
     output_length = state.get("output_length", "standard")
     length_map = {
-        "brief": ("150-200 words", "a very short, high-level overview"),
-        "concise": ("300-400 words", "a focused summary hitting only key points"),
-        "standard": ("500-700 words", "a well-structured report with moderate detail"),
-        "detailed": ("800-1200 words", "a thorough, in-depth report covering all aspects"),
-        "comprehensive": ("1500+ words", "an exhaustive, fully detailed academic-style report")
+        "brief": ("150-200 words", "3-4 paragraphs", "a very short, high-level overview", 150),
+        "concise": ("300-400 words", "5-6 paragraphs", "a focused summary hitting only key points", 300),
+        "standard": ("500-700 words", "8-10 paragraphs", "a well-structured report with moderate detail", 500),
+        "detailed": ("800-1200 words", "12-16 paragraphs", "a thorough, in-depth report covering all aspects", 800),
+        "comprehensive": ("1500+ words", "20+ paragraphs", "an exhaustive, fully detailed academic-style report", 1500)
     }
-    word_target, style_desc = length_map.get(output_length, length_map["standard"])
+    word_target, para_target, style_desc, min_words = length_map.get(output_length, length_map["standard"])
     length_instruction = (
-        f"\n\nOUTPUT LENGTH REQUIREMENT:\n"
-        f"Write {style_desc} of approximately {word_target}.\n"
-        f"This is a STRICT constraint from the user. Stay as close to {word_target} as possible.\n"
-        f"Do NOT exceed or fall significantly short of this target."
+        f"\n\nOUTPUT LENGTH REQUIREMENT (MANDATORY):\n"
+        f"You MUST write {style_desc}.\n"
+        f"Target: approximately {word_target} across {para_target}.\n"
+        f"MINIMUM word count: {min_words} words. Your output MUST have at least {min_words} words.\n"
+        f"Keep writing until you reach at least {min_words} words. Do NOT stop early.\n"
+        f"Expand each section with details, examples, and explanations from the summary.\n"
+        f"If a section seems short, add more context and analysis from the provided material."
     )
 
     log_lines.append(f"\n### Output Length Setting\n")
@@ -102,6 +105,9 @@ def writer_node(state: Dict[str, Any]) -> Dict[str, Any]:
         "- **Use** headings, subheadings, and lists where necessary.\n"
         "- **Ensure** logical progression and flow.\n"
         "- **Improve** readability without altering the core message.\n\n"
+        "- Do NOT mention you are an AI or LLM.\n"
+        "- Do NOT output in markdown format.\n"
+        "- Do NOT write any line as if you are talking to the user.\n\n"
         "If literature_review:\n"
         "- Structure:\n"
         "  1. Introduction\n"

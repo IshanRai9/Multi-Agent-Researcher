@@ -25,5 +25,6 @@ def check_ollama_health() -> bool:
         return False
 
 def get_llm():
-    """Returns local ChatOllama model (0 temperature for reliable processing)."""
-    return ChatOllama(model="phi4-mini-reasoning", temperature=0)
+    """Returns local ChatOllama model (0 temperature for reliable processing).
+    num_predict=4096 ensures SLMs have enough token budget for full reports."""
+    return ChatOllama(model="qwen3.5:4b-q4_K_M", temperature=0, num_predict=4096)

@@ -56,23 +56,46 @@ def searcher_node(state: Dict[str, Any]) -> Dict[str, Any]:
     log_lines.append(f"\n### LLM Sub-Query Generation\n")
     log_lines.append(f"**Raw LLM Output:**\n```\n{raw_output}\n```\n")
     
-    # Safely parse the LLM output into an array
+    # Robust multi-stage parser for SLM outputs
+    optimized_queries = None
+
+    # Stage 1: Try standard ast.literal_eval on bracketed list
     try:
         match = re.search(r'\[.*\]', raw_output, re.DOTALL)
         if match:
             optimized_queries = ast.literal_eval(match.group(0))
-        else:
-            optimized_queries = ast.literal_eval(raw_output)
-            
-        if not isinstance(optimized_queries, list):
-            optimized_queries = [str(optimized_queries)]
+            if not isinstance(optimized_queries, list):
+                optimized_queries = None
+    except Exception:
+        pass
+
+    # Stage 2: Extract individually quoted strings (handles broken brackets)
+    if not optimized_queries:
+        quoted = re.findall(r'["\']([^"\']{10,})["\']', raw_output)
+        if len(quoted) >= 2:
+            optimized_queries = quoted[:3]
+            print(f"--- [Searcher Agent] Fallback: Extracted {len(optimized_queries)} queries from quoted strings ---")
+
+    # Stage 3: Extract numbered list items (e.g. "1. query text")
+    if not optimized_queries:
+        numbered = re.findall(r'\d+\.\s*(.+)', raw_output)
+        if len(numbered) >= 2:
+            optimized_queries = [q.strip().strip('"\'') for q in numbered[:3]]
+            print(f"--- [Searcher Agent] Fallback: Extracted {len(optimized_queries)} queries from numbered list ---")
+
+    # Stage 4: Final fallback — generate 3 search variants from the original query
+    if not optimized_queries:
+        print(f"--- [Searcher Agent] Parsing Failed — using query-derived fallback ---")
+        optimized_queries = [
+            user_query,
+            f"{user_query} research paper arXiv",
+            f"{user_query} comparison analysis"
+        ]
+        log_lines.append(f"**Parsing Failed** -- Using query-derived search variants.\n")
+    else:
         log_lines.append(f"**Parsed Sub-Queries:**\n")
         for i, q in enumerate(optimized_queries):
             log_lines.append(f"{i+1}. `{q}`\n")
-    except Exception as e:
-        print(f"--- [Searcher Agent] Parsing Failed: {e} ---")
-        optimized_queries = [user_query]
-        log_lines.append(f"**Parsing Failed:** `{e}` -- Falling back to original query.\n")
         
     print(f"--- [Searcher Agent] Formulated Sub-Queries: {optimized_queries} ---")
     
