@@ -1,7 +1,7 @@
 import json
 import re
 from typing import Any, Dict
-from .llm_config import get_llm
+from .llm_config import get_llm, strip_thinking_tags
 from langchain_core.prompts import ChatPromptTemplate
 from datetime import datetime
 
@@ -15,10 +15,6 @@ _REJECT_INDICATORS = [
     "inconsisten", "not supported", "false claim", "misleading"
 ]
 
-
-def _strip_thinking_tags(text: str) -> str:
-    """Strip <think>...</think> blocks that some models (Gemma, Qwen) emit before the answer."""
-    return re.sub(r"<think>.*?</think>", "", text, flags=re.DOTALL).strip()
 
 
 def _semantic_pass_check(text: str) -> bool:
@@ -80,7 +76,7 @@ def fact_checker_node(state: Dict[str, Any]) -> Dict[str, Any]:
     raw_response = chain.invoke({"context": raw_context, "summary": current_draft}).content.strip()
 
     # Strip <think> tags that some models emit before the actual answer
-    response = _strip_thinking_tags(raw_response)
+    response = strip_thinking_tags(raw_response)
 
     log_lines.append(f"\n### Raw Auditor Response\n")
     log_lines.append(f"```\n{response[:3000]}{'...(truncated)' if len(response) > 3000 else ''}\n```\n")

@@ -1,5 +1,5 @@
 from typing import Any, Dict
-from .llm_config import get_llm
+from .llm_config import get_llm, strip_thinking_tags
 from langchain_core.prompts import ChatPromptTemplate
 from datetime import datetime
 
@@ -68,6 +68,7 @@ def summarizer_node(state: Dict[str, Any]) -> Dict[str, Any]:
     
     chain = prompt | llm
     summary = chain.invoke({"query": user_query, "context": raw_context}).content.strip()
+    summary = strip_thinking_tags(summary)
 
     elapsed = (datetime.now() - start_time).total_seconds()
 

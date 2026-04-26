@@ -1,5 +1,5 @@
 from typing import Any, Dict
-from .llm_config import get_llm
+from .llm_config import get_llm, strip_thinking_tags
 from langchain_core.prompts import ChatPromptTemplate
 from datetime import datetime
 
@@ -126,6 +126,7 @@ def writer_node(state: Dict[str, Any]) -> Dict[str, Any]:
     
     chain = prompt | llm
     final_report = chain.invoke({"summary": current_draft}).content.strip()
+    final_report = strip_thinking_tags(final_report)
 
     elapsed = (datetime.now() - start_time).total_seconds()
 

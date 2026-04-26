@@ -1,5 +1,5 @@
 from typing import Any, Dict
-from .llm_config import get_llm
+from .llm_config import get_llm, strip_thinking_tags
 from langchain_core.prompts import PromptTemplate
 from tools.search import tavily_search
 from datetime import datetime
@@ -28,17 +28,30 @@ def searcher_node(state: Dict[str, Any]) -> Dict[str, Any]:
     # Connect to LLM to extract optimized queries
     llm = get_llm()
     prompt = PromptTemplate.from_template(
-        "You are an expert Search Strategist.\n"
-        "Generate EXACTLY THREE targeted search queries for the user's question using these rules:\n\n"
-        "1. Query Decomposition: Break multi-part queries into focused sub-queries.\n"
-        "2. Query Rewriting: Use precise keywords and include academic modifiers (e.g., 'paper', 'survey', 'arXiv', 'review').\n"
-        "3. Step-Back Prompting: Ensure ONE query is broad and conceptual.\n\n"
-        "You MUST return ONLY a valid Python list of exactly 3 strings and nothing else.\n\n"
-        "Query: {query}\n"
-        "Search Phrases List:"
+        "You are an expert Academic Search Strategist. Your job is to take a complex user query "
+        "and decompose it into EXACTLY THREE highly optimized search engine queries.\n\n"
+        
+        "CRITICAL RULES:\n"
+        "1. Core Entity Preservation: Identify the main subject of the user's query. That subject MUST be present in all 3 sub-queries to prevent context drift.\n"
+        "2. Query Decomposition: Break multi-part questions into isolated, focused searches.\n"
+        "3. Academic Tone: Use technical keywords and append terms like 'arXiv', 'research paper', 'case study', or 'benchmark' where appropriate.\n"
+        "4. Step-Back: The third query should always be a slightly broader conceptual search to capture missing context.\n\n"
+        
+        "EXAMPLES:\n"
+        "User Query: What are the main architectural differences between LangGraph and AutoGen for multi-agent LLM orchestration, and which one handles cyclic routing better?\n"
+        "Output: [\"LangGraph vs AutoGen multi-agent architecture comparison\", \"LangGraph cyclic routing loop management research\", \"Multi-agent orchestration frameworks directed acyclic graph vs conversational\"]\n\n"
+        
+        "User Query: Explain the use of MILP for optimizing solar panel placement in urban environments with high shading.\n"
+        "Output: [\"Mixed-Integer Linear Programming solar panel placement optimization\", \"Urban environment shading models PV deployment MILP\", \"Techno-economic optimization distributed energy resources urban grids arXiv\"]\n\n"
+        
+        "You MUST return ONLY a valid Python list of exactly 3 strings. Do not include markdown formatting, explanations, or introductory text.\n\n"
+        
+        "User Query: {query}\n"
+        "Output:"
     )
     chain = prompt | llm
     raw_output = chain.invoke(user_query).content.strip()
+    raw_output = strip_thinking_tags(raw_output)
 
     log_lines.append(f"\n### LLM Sub-Query Generation\n")
     log_lines.append(f"**Raw LLM Output:**\n```\n{raw_output}\n```\n")
