@@ -7,11 +7,25 @@ warnings.filterwarnings("ignore", category=DeprecationWarning)
 OLLAMA_BASE_URL = "http://localhost:11434"
 
 def strip_thinking_tags(text: str) -> str:
-    """Remove <think>...</think> blocks from reasoning model outputs (phi3, qwen3, etc.).
-    Handles multiline content, multiple blocks, and unclosed tags."""
-    cleaned = re.sub(r'<think>.*?</think>', '', text, flags=re.DOTALL)
-    # Also handle unclosed <think> tags (model cut off mid-thought)
-    cleaned = re.sub(r'<think>.*$', '', cleaned, flags=re.DOTALL)
+    """Remove thinking/reasoning blocks from SLM outputs.
+    
+    Handles:
+    - Standard <think>...</think> blocks
+    - Misspelled variants: <thick>, <thinking>, <thinker>, etc.
+    - Unclosed tags (model cut off mid-thought)
+    - 'Final Answer:' preamble markers some models use after thinking
+    """
+    # Match any XML-like tag that looks like a thinking block:
+    # <think>, <thick>, <thinking>, <thinker>, etc. (case-insensitive)
+    cleaned = re.sub(r'<thi\w*>.*?</thi\w*>', '', text, flags=re.DOTALL | re.IGNORECASE)
+    # Handle unclosed thinking tags (model ran out of tokens mid-thought)
+    cleaned = re.sub(r'<thi\w*>.*$', '', cleaned, flags=re.DOTALL | re.IGNORECASE)
+    
+    # Some models prefix with "Final Answer:" after their thinking block
+    final_answer_match = re.search(r'\*{0,2}Final\s+Answer:?\*{0,2}\s*', cleaned, flags=re.IGNORECASE)
+    if final_answer_match:
+        cleaned = cleaned[final_answer_match.end():]
+    
     return cleaned.strip()
 
 def check_ollama_health() -> bool:
