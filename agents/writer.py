@@ -89,26 +89,37 @@ def writer_node(state: Dict[str, Any]) -> Dict[str, Any]:
     log_lines.append(f"\n### Output Length Setting\n")
     log_lines.append(f"**Selected:** `{output_length}` ({word_target})\n")
 
+    # Get the original user query to anchor the writer
+    messages = state.get("messages", [])
+    user_query = ""
+    for msg in messages:
+        if msg.startswith("User query:"):
+            user_query = msg.replace("User query:", "").strip()
+            break
+
     llm = get_llm()
     prompt = ChatPromptTemplate.from_messages([
-        ("system", "You are an expert **Technical Writer**. Your task is to structure the provided text into a **clear, organised format** while maintaining its original meaning.\n\n"
-        "First, identify the query type(DO NOT write the query type in the final report):\n"
+        ("system", "You are an expert **Technical Writer**. Your task is to structure the provided verified summary into a **clear, organised report** that directly answers the user's original research query.\n\n"
+        "QUERY TO ANSWER: " + user_query + "\n\n"
+        "CRITICAL RULES:\n"
+        "- Your report MUST directly answer the QUERY above.\n"
+        "- Use ONLY information from the verified summary below. Do NOT invent, fabricate, or extrapolate.\n"
+        "- Do NOT drift to related but different topics.\n"
+        "- Every claim in your report must come from the summary.\n"
+        "- Include inline citations like [1], [2] using the provided references.\n\n"
+        "First, identify the query type (DO NOT write the query type in the final report):\n"
         "- literature_review\n"
         "- comparison\n"
         "- concept_explanation\n\n"
         "Then write accordingly using the verified summary.\n\n"
-        "Rules:\n"
-        "- Do NOT hallucinate.\n"
-        "- Use only the provided summary.\n"
-        "- Include inline citations like [1], [2] using the provided references.\n\n"
-        "- **Segment** content into appropriate sections.\n"
+        "Formatting Rules:\n"
+        "- **Segment** content into appropriate sections with headings.\n"
         "- **Use** headings, subheadings, and lists where necessary.\n"
         "- **Ensure** logical progression and flow.\n"
-        "- **Improve** readability without altering the core message.\n\n"
+        "- **Improve** readability without altering the core message.\n"
         "- Do NOT mention you are an AI or LLM.\n"
         "- Do NOT write any line as if you are talking to the user.\n\n"
         "If literature_review:\n"
-        "- Structure:\n"
         "  1. Introduction\n"
         "  2. Review of Existing Work (group by approaches/studies)\n"
         "  3. Comparative Insights\n"
@@ -119,18 +130,18 @@ def writer_node(state: Dict[str, Any]) -> Dict[str, Any]:
         "If concept_explanation:\n"
         "- Stay focused on the exact concept asked\n\n"
         "IMPORTANT:\n"
-        "- Do NOT drift into generic explanations\n"
-        "- Stay tightly aligned to the query\n"
+        "- Do NOT drift into generic explanations or tangential topics\n"
+        "- Stay tightly aligned to the QUERY above\n"
         "- End with a '## References' section listing all cited sources\n\n"
         "If summary == 'INSUFFICIENT_CONTEXT':\n"
         "Output EXACTLY:\n"
         "'The provided documents and web search did not contain enough information to fully answer your query.'"
         + length_instruction + references_context),
-        ("user", "Verified Summary:\n{summary}")
+        ("user", "Original Research Query: {query}\n\nVerified Summary:\n{summary}")
     ])
     
     chain = prompt | llm
-    raw_final_report = chain.invoke({"summary": current_draft}).content.strip()
+    raw_final_report = chain.invoke({"query": user_query, "summary": current_draft}).content.strip()
     final_report = strip_thinking_tags(raw_final_report)
     
     # Fallback in case stripping removed absolutely everything (e.g. model only output a think block or got cut off)

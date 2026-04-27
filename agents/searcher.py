@@ -34,7 +34,6 @@ def searcher_node(state: Dict[str, Any]) -> Dict[str, Any]:
         "CRITICAL RULES:\n"
         "1. Core Entity Preservation: Identify the main subject of the user's query. That subject MUST be present in all 3 sub-queries to prevent context drift.\n"
         "2. Query Decomposition: Break multi-part questions into isolated, focused searches.\n"
-        "3. Academic Tone: Use technical keywords and append terms in the sub-queries like 'arXiv', 'research paper', 'case study', or 'benchmark' if it matches the user query, if not then don't add it.\n"
         
         "EXAMPLES:\n"
         "User Query: What are the main architectural differences between LangGraph and AutoGen for multi-agent LLM orchestration, and which one handles cyclic routing better?\n"
